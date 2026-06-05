@@ -363,13 +363,13 @@
         im.src=srcs[0];wrap.appendChild(im);addTag(wrap,"drivetag","DRIVE");
       }
     } else if(it.type==="onedrive"){
-      if(it.odmode==="image"){
-        const im=document.createElement("img");im.loading="lazy";im.referrerPolicy="no-referrer";im.alt=brandName;
-        im.onerror=()=>{im.remove();const fr=document.createElement("iframe");fr.className="drivepreview";fr.src=(it.data||"").replace(/\/download\b/i,"/embed");fr.setAttribute("scrolling","no");fr.loading="lazy";fr.title=brandName;wrap.appendChild(fr);};
-        im.src=it.data;wrap.appendChild(im);
-      } else {
-        const fr=document.createElement("iframe");fr.className="drivepreview";fr.src=(it.data||"").replace(/\/download\b/i,"/embed");fr.setAttribute("scrolling","no");fr.loading="lazy";fr.title=brandName;wrap.appendChild(fr);
-      }
+      // Try a direct file stream first (works for publicly-shared images), fall back to the viewer frame.
+      const raw=it.data||"";
+      const direct=/\/embed/i.test(raw)?raw.replace(/\/embed\b/i,"/download")
+                  :(/[?&]download=1/i.test(raw)?raw:raw+(raw.indexOf("?")>=0?"&":"?")+"download=1");
+      const im=document.createElement("img");im.loading="lazy";im.referrerPolicy="no-referrer";im.alt=brandName;
+      im.onerror=()=>{im.remove();const fr=document.createElement("iframe");fr.className="drivepreview";fr.src=raw.replace(/\/embed\b/i,"/embed");fr.setAttribute("scrolling","no");fr.loading="lazy";fr.title=brandName;wrap.appendChild(fr);};
+      im.src=direct;wrap.appendChild(im);
       addTag(wrap,"odtag","ONEDRIVE");
     } else if(it.type==="video"){
       if(it.provider==="youtube"){const im=document.createElement("img");im.src="https://img.youtube.com/vi/"+it.vid+"/hqdefault.jpg";im.loading="lazy";wrap.appendChild(im);}
