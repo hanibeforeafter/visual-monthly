@@ -341,9 +341,21 @@
     } else if(it.type==="gdrive"){
       if(it.folder){wrap.classList.add("filecard");wrap.innerHTML='<span class="ic">📁</span><span class="fn">Drive folder</span>';addTag(wrap,"drivetag","DRIVE");}
       else{
-        const fr=document.createElement("iframe");fr.className="drivepreview";
-        fr.src="https://drive.google.com/file/d/"+it.gid+"/preview";fr.setAttribute("scrolling","no");fr.loading="lazy";fr.title=brandName;
-        wrap.appendChild(fr);addTag(wrap,"drivetag","DRIVE");
+        // Clean static thumbnail (no viewer controls). Fall back to lh3, then the live
+        // preview frame only if both image endpoints are blocked.
+        const im=document.createElement("img");im.loading="lazy";im.referrerPolicy="no-referrer";im.alt=brandName;
+        const srcs=["https://drive.google.com/thumbnail?id="+it.gid+"&sz=w1000","https://lh3.googleusercontent.com/d/"+it.gid+"=w1000"];
+        let si=0;
+        im.onerror=()=>{
+          si++;
+          if(si<srcs.length){im.src=srcs[si];}
+          else{
+            im.remove();
+            const fr=document.createElement("iframe");fr.className="drivepreview";fr.src="https://drive.google.com/file/d/"+it.gid+"/preview";fr.setAttribute("scrolling","no");fr.loading="lazy";fr.title=brandName;
+            wrap.appendChild(fr);
+          }
+        };
+        im.src=srcs[0];wrap.appendChild(im);addTag(wrap,"drivetag","DRIVE");
       }
     } else if(it.type==="video"){
       if(it.provider==="youtube"){const im=document.createElement("img");im.src="https://img.youtube.com/vi/"+it.vid+"/hqdefault.jpg";im.loading="lazy";wrap.appendChild(im);}
