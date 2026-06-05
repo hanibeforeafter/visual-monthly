@@ -81,13 +81,10 @@
   .legend .pill{display:flex;align-items:center;gap:7px;background:rgba(230,234,245,.92);color:var(--ink);border-radius:999px;padding:5px 12px;font-weight:700;font-size:12.5px;}
   .legend .dot{width:11px;height:11px;border-radius:50%;}
 
-  .people{padding:16px;display:flex;flex-direction:column;gap:12px;}
-  .person{display:flex;align-items:center;gap:12px;background:rgba(232,236,246,.95);border-radius:999px;padding:10px 16px;color:var(--ink);}
-  .avatar{width:30px;height:30px;border-radius:50%;flex:0 0 auto;}
-  .pname{font-weight:800;font-size:16px;min-width:64px;}
-  .track{flex:1 1 auto;height:14px;border-radius:999px;background:rgba(120,130,150,.25);overflow:hidden;}
-  .fill{height:100%;border-radius:999px;width:0;transition:width .9s cubic-bezier(.2,.7,.2,1);}
-  .pval{font-weight:800;font-size:16px;min-width:48px;text-align:right;}
+  .people{padding:20px 16px 24px;display:flex;justify-content:space-around;align-items:flex-start;gap:10px;flex-wrap:wrap;}
+  .person{display:flex;flex-direction:column;align-items:center;gap:5px;flex:1 1 0;min-width:78px;text-align:center;}
+  .pct{font-family:'Quicksand',sans-serif;font-weight:700;font-size:clamp(30px,4.4vw,48px);line-height:1;letter-spacing:-.5px;}
+  .pname{font-weight:800;font-size:14px;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;}
 
   .dots{display:flex;justify-content:center;gap:9px;margin-top:18px;}
   .dots button{width:10px;height:10px;border-radius:50%;border:none;background:rgba(180,195,240,.35);cursor:pointer;padding:0;transition:.2s;}
@@ -377,10 +374,9 @@
     const total=arr.reduce((s,p)=>s+Number(p.value),0)||1;
     arr.forEach(p=>{
       const pct=Math.round(Number(p.value)/total*100);
-      const row=document.createElement("div");row.className="person";
-      row.innerHTML='<span class="avatar" style="background:'+p.color+'"></span><span class="pname">'+escapeHtml(p.name)+'</span><span class="track"><span class="fill" style="background:'+p.color+'"></span></span><span class="pval">'+pct+'%</span>';
-      wrap.appendChild(row);
-      requestAnimationFrame(()=>{row.querySelector(".fill").style.width=pct+"%";});
+      const item=document.createElement("div");item.className="person";
+      item.innerHTML='<span class="pct" style="color:'+p.color+'">'+pct+'%</span><span class="pname">'+escapeHtml(p.name)+'</span>';
+      wrap.appendChild(item);
     });
   }
   function renderDots(){
