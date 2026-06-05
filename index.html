@@ -438,11 +438,7 @@
     if(it.type==="image"){const im=document.createElement("img");im.src=it.data;lightboxStage.appendChild(im);}
     else if(it.type==="pdf"){const f=document.createElement("iframe");f.src=it.data;lightboxStage.appendChild(f);}
     else if(it.type==="gdrive"){if(it.folder){window.open(it.data,"_blank","noopener");return;}const f=document.createElement("iframe");f.src=driveEmbed(it);f.allow="autoplay; fullscreen";f.allowFullscreen=true;lightboxStage.appendChild(f);}
-    else if(it.type==="onedrive"){
-      if(it.odmode==="image"){const im=document.createElement("img");im.src=it.data;lightboxStage.appendChild(im);}
-      else{const f=document.createElement("iframe");f.src=(it.data||"").replace(/\/download\b/i,"/embed");f.allow="autoplay; fullscreen";f.allowFullscreen=true;lightboxStage.appendChild(f);}
-    }
-    else if(it.type==="video"){
+    else if(it.type==="onedrive"){ window.open(it.data,"_blank","noopener"); return; }    else if(it.type==="video"){
       if(it.provider==="youtube"){const f=document.createElement("iframe");f.src="https://www.youtube.com/embed/"+it.vid+"?autoplay=1";f.allow="autoplay; encrypted-media; fullscreen";f.allowFullscreen=true;lightboxStage.appendChild(f);}
       else if(it.provider==="vimeo"){const f=document.createElement("iframe");f.src="https://player.vimeo.com/video/"+it.vid+"?autoplay=1";f.allow="autoplay; fullscreen";f.allowFullscreen=true;lightboxStage.appendChild(f);}
       else{const v=document.createElement("video");v.src=it.data;v.controls=true;v.autoplay=true;lightboxStage.appendChild(v);}
