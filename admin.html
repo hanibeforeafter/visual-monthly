@@ -52,6 +52,31 @@
   
   .toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(20px);background:#16c4a7;color:#04221b;font-weight:800;padding:11px 20px;border-radius:999px;opacity:0;transition:.3s;z-index:90;pointer-events:none;font-size:14px;}
   .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+  /* Back to Homepage Button Styling */
+  #homeLink {
+    position: fixed; 
+    left: 22px; 
+    bottom: 22px;
+    background: rgba(255, 255, 255, 0.08); 
+    border: 1px solid var(--stroke-soft);
+    color: var(--text-dim); 
+    text-decoration: none;
+    padding: 8px 16px; 
+    border-radius: 999px;
+    font-family: 'Nunito', sans-serif; 
+    font-weight: 800; 
+    font-size: 13px;
+    backdrop-filter: blur(8px); 
+    transition: 0.2s; 
+    z-index: 50;
+  }
+  #homeLink:hover {
+    background: var(--glow); 
+    color: #fff; 
+    border-color: transparent; 
+    transform: scale(1.05);
+  }
 </style>
 
 <!-- Login Screen -->
@@ -86,6 +111,9 @@
 </div>
 
 <div class="toast" id="toast"></div>
+
+<!-- Back to Homepage Link -->
+<a href="/" id="homeLink">Back to Dashboard</a>
 
 <script>
 (function(){
