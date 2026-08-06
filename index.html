@@ -142,6 +142,7 @@
 <div id="syncBar">
   <span class="sync-pill" id="syncStatus">connecting…</span>
   <button class="sync-refresh" id="refreshBtn">↻ Refresh</button>
+  <select id="monthSelect" class="sync-refresh" style="outline: none; padding-right: 25px;"></select>
 </div>
 
 <div class="stage">
@@ -225,12 +226,16 @@
     }
   };
 
-  let config=null;          // {meta, brands, donut, people}
-  const galleries={};       // brandId -> [items]
+  let config=null;
+  const galleries={};
   let current=0, adminTab=0;
-  let liveMode=false;       // true when the Netlify backend is reachable
-  let sessionPin="";        // edit PIN remembered for this session
+  let liveMode=false;
+  let sessionPin="";
   let uidc=0;
+  
+  let availableMonths = []; 
+  let selectedMonthKey = "state"; 
+
   function uid(){ return "i"+(uidc++)+Date.now().toString(36); }
 
   /* ===== Build renderable items from stored gallery entries ===== */
@@ -252,7 +257,6 @@
     return {type:"pdf"};
   }
   function hydrate(entry){
-    // entry: {kind:"upload",type,name,data(base64)} or {kind:"link",url}
     if(entry.kind==="upload"){
       return Object.assign({id:entry.id||uid(),kind:"upload",name:entry.name||"file",data:entry.data}, {type:entry.type});
     }
@@ -276,16 +280,30 @@
     config={meta:DEFAULT.meta,brands:DEFAULT.brands,donut:DEFAULT.donut,people:JSON.parse(JSON.stringify(DEFAULT.people))};
     buildGalleries(DEFAULT.gallery);
   }
+  
   async function load(){
     try{
-      const res=await fetch(API,{cache:"no-store"});
+      const listRes = await fetch(API + "?action=list", {cache:"no-store"});
+      if (listRes.ok) {
+        const listData = await listRes.json();
+        availableMonths = listData.keys || ["state"];
+        if (availableMonths.length === 0) availableMonths = ["state"];
+      }
+
+      const res=await fetch(API + "?month=" + encodeURIComponent(selectedMonthKey),{cache:"no-store"});
       if(res.ok){
         liveMode=true;
         const state=await res.json();
-        if(state && state.brands) applyState(state); else useDefaults();
+        if(state && state.brands) {
+            applyState(state);
+            if (selectedMonthKey !== "state" && config.meta.sub) {
+                selectedMonthKey = config.meta.sub;
+            }
+        } else useDefaults();
       } else { liveMode=false; useDefaults(); }
     }catch(e){ liveMode=false; useDefaults(); }
   }
+
   function buildState(){
     const gallery={};
     config.brands.forEach(b=>{
@@ -296,8 +314,12 @@
     });
     return {meta:config.meta,brands:config.brands,donut:config.donut,people:config.people,gallery};
   }
+  
   async function saveAll(pin){
-    const res=await fetch(API,{method:"POST",headers:{"Content-Type":"application/json","x-edit-pin":pin},body:JSON.stringify(buildState())});
+    const monthKey = (config.meta.sub || "state").trim();
+    selectedMonthKey = monthKey; 
+    
+    const res=await fetch(API + "?month=" + encodeURIComponent(monthKey),{method:"POST",headers:{"Content-Type":"application/json","x-edit-pin":pin},body:JSON.stringify(buildState())});
     if(res.status===401) throw new Error("PIN");
     if(!res.ok) throw new Error("HTTP "+res.status);
     return true;
@@ -346,8 +368,6 @@
     } else if(it.type==="gdrive"){
       if(it.folder){wrap.classList.add("filecard");wrap.innerHTML='<span class="ic">📁</span><span class="fn">Drive folder</span>';addTag(wrap,"drivetag","DRIVE");}
       else{
-        // Clean static thumbnail (no viewer controls). Fall back to lh3, then the live
-        // preview frame only if both image endpoints are blocked.
         const im=document.createElement("img");im.loading="lazy";im.referrerPolicy="no-referrer";im.alt=brandName;
         const srcs=["https://drive.google.com/thumbnail?id="+it.gid+"&sz=w1000","https://lh3.googleusercontent.com/d/"+it.gid+"=w1000"];
         let si=0;
@@ -363,7 +383,6 @@
         im.src=srcs[0];wrap.appendChild(im);addTag(wrap,"drivetag","DRIVE");
       }
     } else if(it.type==="onedrive"){
-      // Try a direct file stream first (works for publicly-shared images), fall back to the viewer frame.
       const raw=it.data||"";
       const direct=/\/embed/i.test(raw)?raw.replace(/\/embed\b/i,"/download")
                   :(/[?&]download=1/i.test(raw)?raw:raw+(raw.indexOf("?")>=0?"&":"?")+"download=1");
@@ -423,10 +442,37 @@
     if(liveMode){el.className="sync-pill ok";el.textContent="✓ Live — edits save to your site";}
     else{el.className="sync-pill warn";el.textContent="⚠ Preview mode — edits won't save here (deploy to Netlify)";}
   }
+  
+  function renderMonthDropdown() {
+     const select = document.getElementById("monthSelect");
+     if (!select) return;
+     select.innerHTML = "";
+     
+     if (!availableMonths.includes(selectedMonthKey)) {
+         availableMonths.push(selectedMonthKey);
+     }
+     
+     availableMonths.forEach(m => {
+         const opt = document.createElement("option");
+         opt.value = m;
+         opt.textContent = m === "state" ? "Old Data / Default" : m;
+         if (m === selectedMonthKey) opt.selected = true;
+         select.appendChild(opt);
+     });
+     
+     select.onchange = async (e) => {
+         selectedMonthKey = e.target.value;
+         await load();
+         renderAll();
+         toast("Loaded " + (selectedMonthKey === 'state' ? 'Old Data' : selectedMonthKey));
+     };
+  }
+
   function renderAll(){
     document.getElementById("titleEl").textContent=config.meta.title||"";
     document.getElementById("subEl").textContent=config.meta.sub||"";
     updateSyncStatus();renderDonut();renderBoard();
+    renderMonthDropdown();
   }
   async function refreshFromStore(){ await load(); renderAll(); toast(liveMode?"Refreshed ✓":"Backend not reachable",!liveMode); }
 
