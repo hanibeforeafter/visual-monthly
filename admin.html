@@ -1,0 +1,297 @@
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@500;600;700&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+
+<style>
+  :root{
+    --bg-0:#05070f; --bg-1:#0a1226; --glow:#1e6cff;
+    --stroke:rgba(160,185,255,0.45); --stroke-soft:rgba(160,185,255,0.22);
+    --text:#f4f7ff; --text-dim:#c3ccea; --shadow:0 30px 80px -30px rgba(0,0,0,.8);
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; font-family:'Nunito',sans-serif; color:var(--text);
+    background: linear-gradient(160deg, var(--bg-1), var(--bg-0) 70%);
+    min-height:100vh; padding:30px 16px; display:flex; justify-content:center;
+  }
+  
+  /* Login Screen */
+  #loginScreen {
+      display:flex; flex-direction:column; align-items:center; justify-content:center;
+      width:100%; max-width:400px; height:60vh;
+  }
+  #loginScreen h2 { font-family:'Quicksand'; margin-bottom: 20px; }
+  
+  /* Admin Editor */
+  #adminScreen { width:100%; max-width:800px; display:none; flex-direction:column; gap:20px; }
+  .admin{ background:linear-gradient(180deg,#121a30,#0c1426); border:1px solid var(--stroke); border-radius:22px; box-shadow:var(--shadow); width: 100%; }
+  .admin-head{ display:flex; align-items:center; justify-content:space-between; padding:18px 22px; border-bottom:1px solid var(--stroke-soft); }
+  .admin-head h2{ font-family:'Quicksand'; margin:0; font-size:22px; font-weight:700; }
+  .admin-body{ padding:6px 22px 26px; }
+  .admin h3{ font-family:'Quicksand'; font-size:15px; letter-spacing:1px; text-transform:uppercase; color:#9fb0e0; margin:24px 0 10px; }
+  .row{ display:flex; gap:10px; align-items:center; margin-bottom:10px; flex-wrap:wrap; }
+  label.fld{ display:flex; flex-direction:column; gap:5px; font-size:12px; color:var(--text-dim); font-weight:700; }
+  input[type=text],input[type=number],input[type=password],select{ background:rgba(255,255,255,.06); border:1px solid var(--stroke-soft); color:var(--text); border-radius:10px; padding:9px 11px; font-family:'Nunito'; font-size:14px; font-weight:700; outline:none; }
+  input[type=color]{ width:38px; height:38px; border:none; background:none; border-radius:10px; cursor:pointer; padding:0; }
+  .btn{ background:var(--glow); color:#fff; border:none; border-radius:10px; padding:10px 16px; font-family:'Nunito'; font-weight:800; font-size:14px; cursor:pointer; transition:filter .2s,transform .1s; }
+  .btn:hover{ filter:brightness(1.1); }
+  .btn:active{ transform:scale(.97); }
+  .btn.danger{ background:rgba(240,53,59,.18); color:#ff9a9d; }
+  .btn.sm{ padding:6px 11px; font-size:12.5px; }
+  .tabs{ display:flex; gap:8px; flex-wrap:wrap; margin:6px 0 4px; }
+  .tab{ padding:8px 14px; border-radius:999px; border:1px solid var(--stroke-soft); background:rgba(255,255,255,.05); color:var(--text-dim); cursor:pointer; font-weight:800; font-size:13px; }
+  .tab.on{ background:var(--glow); color:#fff; border-color:transparent; }
+  .mini{ font-size:12px; color:#8c9bc4; margin-top:4px; font-weight:600; }
+  
+  .admin-thumbs{ display:grid; grid-template-columns:repeat(auto-fill,minmax(82px,1fr)); gap:10px; margin-top:10px; }
+  .admin-thumb{ position:relative; aspect-ratio:1; border-radius:12px; overflow:hidden; border:1px solid var(--stroke-soft); background:#222b42; }
+  .admin-thumb .thumb img { width:100%; height:100%; object-fit:cover; }
+  .admin-thumb .del{ position:absolute; top:4px; right:4px; width:22px; height:22px; border-radius:50%; border:none; background:rgba(0,0,0,.6); color:#fff; cursor:pointer; font-size:13px; display:flex; align-items:center; justify-content:center; }
+  .hidden-input{ display:none; }
+  hr.sep{ border:none; border-top:1px solid var(--stroke-soft); margin:22px 0; }
+  
+  .toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(20px);background:#16c4a7;color:#04221b;font-weight:800;padding:11px 20px;border-radius:999px;opacity:0;transition:.3s;z-index:90;pointer-events:none;font-size:14px;}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+</style>
+
+<!-- Login Screen -->
+<div id="loginScreen">
+  <h2>Admin Panel</h2>
+  <div class="row">
+      <input type="password" id="loginPin" placeholder="Enter Edit PIN">
+      <button class="btn" id="loginBtn">Unlock</button>
+  </div>
+</div>
+
+<!-- Admin Screen -->
+<div id="adminScreen">
+    <div class="admin">
+      <div class="admin-head">
+        <h2>Month Manager</h2>
+      </div>
+      <div class="admin-body">
+        <div class="mini">Select an existing month to edit, or load the default to start fresh.</div>
+        <div class="row" style="margin-top:10px">
+            <select id="monthSelect" style="flex:1"></select>
+            <button class="btn sm" id="loadMonthBtn">Load Data</button>
+            <button class="btn danger sm" id="deleteMonthBtn">Delete Month</button>
+        </div>
+      </div>
+    </div>
+    
+    <div class="admin" id="editorWrap" style="display:none;">
+      <div class="admin-head"><h2>⚙︎ Monthly Editor</h2></div>
+      <div class="admin-body" id="adminBody"></div>
+    </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+  "use strict";
+  const API = "/.netlify/functions/data";
+  let sessionPin = "";
+  let config = null;
+  const galleries = {};
+  let adminTab = 0;
+  let availableMonths = [];
+  let uidc=0;
+  function uid(){ return "i"+(uidc++)+Date.now().toString(36); }
+
+  const DEFAULT = {
+    meta:{ title:"Visual Art Team Monthly Report", sub:"New Month" },
+    brands:[ {id:"gym",name:"Obsidian Gym"},{id:"fitness",name:"Obsidian Fitness"}, {id:"egg",name:"Triple Egg"},{id:"wok",name:"Wok This Way"} ],
+    donut:[ {label:"Obsidian Gym",value:12,color:"#16c4a7"}, {label:"Obsidian Fitness",value:5,color:"#f0353b"} ],
+    people:{ gym:[], fitness:[], egg:[], wok:[] },
+    gallery:{ gym:[], fitness:[], egg:[], wok:[] }
+  };
+
+  /* UI Helpers */
+  function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+  function toast(msg,bad){const t=document.getElementById("toast");t.textContent=msg;t.style.background=bad?"#f0353b":"#16c4a7";t.style.color=bad?"#fff":"#04221b";t.classList.add("show");setTimeout(()=>t.classList.remove("show"),2400);}
+  function fld(label,id,val,type,style){return '<label class="fld" style="'+(style||'')+'">'+escapeHtml(label)+'<input type="'+type+'" id="'+id+'" value="'+escapeHtml(val)+'"></label>';}
+
+  /* Login Logic */
+  document.getElementById("loginBtn").onclick = async () => {
+      sessionPin = document.getElementById("loginPin").value.trim();
+      if (!sessionPin) return toast("Enter a PIN", true);
+      
+      // Load months to verify connection
+      try {
+          const listRes = await fetch(API + "?action=list", {cache:"no-store"});
+          if (listRes.ok) {
+              const listData = await listRes.json();
+              availableMonths = listData.keys || [];
+              refreshDropdown();
+              document.getElementById("loginScreen").style.display = "none";
+              document.getElementById("adminScreen").style.display = "flex";
+              toast("Unlocked");
+          } else {
+              toast("Backend unreachable", true);
+          }
+      } catch(e) { toast("Error connecting", true); }
+  };
+
+  /* Month Manager Logic */
+  function refreshDropdown() {
+      const select = document.getElementById("monthSelect");
+      select.innerHTML = '<option value="DEFAULT">-- Start a Fresh Month (Default) --</option>';
+      availableMonths.forEach(m => {
+          if (m === "state") return; // skip raw state
+          const opt = document.createElement("option");
+          opt.value = m;
+          opt.textContent = "Edit: " + m;
+          select.appendChild(opt);
+      });
+  }
+
+  document.getElementById("loadMonthBtn").onclick = async () => {
+      const selected = document.getElementById("monthSelect").value;
+      if (selected === "DEFAULT") {
+          applyState(JSON.parse(JSON.stringify(DEFAULT)));
+          buildAdmin();
+          toast("Loaded Default Template");
+          return;
+      }
+      try {
+          const res = await fetch(API + "?month=" + encodeURIComponent(selected), {cache:"no-store"});
+          if(res.ok){
+              const state=await res.json();
+              applyState(state);
+              buildAdmin();
+              toast("Loaded " + selected);
+          }
+      } catch(e) { toast("Failed to load", true); }
+  };
+
+  document.getElementById("deleteMonthBtn").onclick = async () => {
+      const selected = document.getElementById("monthSelect").value;
+      if (selected === "DEFAULT") return toast("Cannot delete the template", true);
+      if (!confirm("Are you SURE you want to delete the data for " + selected + "?")) return;
+      
+      try {
+          const res = await fetch(API + "?month=" + encodeURIComponent(selected), {
+              method:"DELETE", headers:{"x-edit-pin":sessionPin}
+          });
+          if(res.status===401) return toast("Wrong Edit PIN", true);
+          if(res.ok) {
+              toast("Deleted " + selected);
+              document.getElementById("editorWrap").style.display = "none";
+              availableMonths = availableMonths.filter(m => m !== selected);
+              refreshDropdown();
+          }
+      } catch(e) { toast("Failed to delete", true); }
+  };
+
+  /* Editor Logic */
+  function applyState(s){
+    config={meta:s.meta,brands:s.brands,donut:s.donut,people:s.people||{}};
+    config.brands.forEach(b=>{ if(!config.people[b.id]) config.people[b.id]=[]; });
+    config.brands.forEach(b=>{
+        galleries[b.id] = (s.gallery && s.gallery[b.id] ? s.gallery[b.id] : []).map(entry => {
+            if(entry.kind==="upload") return {id:entry.id||uid(), kind:"upload", name:entry.name, data:entry.data};
+            return {id:entry.id||uid(), kind:"link", url:entry.url};
+        });
+    });
+  }
+
+  function buildAdmin(){
+    document.getElementById("editorWrap").style.display = "block";
+    const b=document.getElementById("adminBody"),brand=config.brands[adminTab];
+    let s='<h3>Report Heading</h3><div class="row">';
+    s+=fld("Title","cfg-title",config.meta.title,"text","min-width:300px;flex:1");
+    s+=fld("Subtitle / Month (Saves as this name)","cfg-sub",config.meta.sub,"text","flex:1");
+    s+='</div>';
+    s+='<h3>Brands Workload Overall (donut)</h3><div id="donutRows"></div><button class="btn ghost sm" id="addDonut">+ Add segment</button>';
+    s+='<hr class="sep"><h3>Per-Brand Content</h3><div class="tabs" id="brandTabs"></div>';
+    s+='<div class="row" style="margin-top:6px">'+fld("Brand name","brand-name",brand.name,"text","flex:1")+'</div>';
+    s+='<h3>Gallery — '+escapeHtml(brand.name)+'</h3>';
+    s+='<div class="row" style="margin-top:8px"><input type="text" id="linkInput" placeholder="Paste a Drive / YouTube / Image URL…" style="flex:1"><button class="btn sm" id="addLinkBtn">＋ Add link</button><button class="btn ghost sm" id="clearGallery">Clear all</button></div>';
+    s+='<div class="admin-thumbs" id="thumbs"></div>';
+    s+='<h3>Workload Per Person — '+escapeHtml(brand.name)+'</h3><div id="peopleRows"></div><button class="btn ghost sm" id="addPerson">+ Add person</button>';
+    s+='<hr class="sep"><div class="row" style="justify-content:flex-end;margin-top:10px"><button class="btn" id="saveBtn">Save & Publish Changes</button></div>';
+    b.innerHTML=s;
+
+    renderDonutRows();renderBrandTabs();renderThumbs();renderPeopleRows();
+    document.getElementById("addDonut").onclick=()=>{config.donut.push({label:"New",value:5,color:"#888888"});renderDonutRows();};
+    document.getElementById("addPerson").onclick=()=>{config.people[brand.id].push({name:"Name",value:1,color:"#6fb1ec"});renderPeopleRows();};
+    document.getElementById("brand-name").oninput=e=>{brand.name=e.target.value; renderBrandTabs();};
+    document.getElementById("addLinkBtn").onclick=handleAddLink;
+    document.getElementById("clearGallery").onclick=()=>{if(confirm("Remove all media for "+brand.name+"?")){galleries[brand.id]=[];renderThumbs();}};
+    document.getElementById("saveBtn").onclick=doSave;
+  }
+
+  function renderDonutRows(){
+    const host=document.getElementById("donutRows");host.innerHTML="";
+    config.donut.forEach((d,i)=>{
+      const r=document.createElement("div");r.className="row";
+      r.innerHTML='<input type="color" value="'+d.color+'" class="d-color"><input type="text" value="'+escapeHtml(d.label)+'" class="d-label" style="flex:1"><input type="number" value="'+d.value+'" class="d-val" style="width:80px"><button class="btn danger sm">✕</button>';
+      host.appendChild(r);
+      r.querySelector(".d-color").oninput=e=>{config.donut[i].color=e.target.value;};
+      r.querySelector(".d-label").oninput=e=>{config.donut[i].label=e.target.value;};
+      r.querySelector(".d-val").oninput=e=>{config.donut[i].value=Number(e.target.value)||0;};
+      r.querySelector("button").onclick=()=>{config.donut.splice(i,1);renderDonutRows();};
+    });
+  }
+  function renderPeopleRows(){
+    const brand=config.brands[adminTab],host=document.getElementById("peopleRows");host.innerHTML="";
+    (config.people[brand.id]||[]).forEach((p,i)=>{
+      const r=document.createElement("div");r.className="row";
+      r.innerHTML='<input type="color" value="'+p.color+'" class="p-color"><input type="text" value="'+escapeHtml(p.name)+'" class="p-name" style="flex:1"><input type="number" value="'+p.value+'" class="p-val" style="width:80px"><button class="btn danger sm">✕</button>';
+      host.appendChild(r);
+      r.querySelector(".p-color").oninput=e=>{config.people[brand.id][i].color=e.target.value;};
+      r.querySelector(".p-name").oninput=e=>{config.people[brand.id][i].name=e.target.value;};
+      r.querySelector(".p-val").oninput=e=>{config.people[brand.id][i].value=Number(e.target.value)||0;};
+      r.querySelector("button").onclick=()=>{config.people[brand.id].splice(i,1);renderPeopleRows();};
+    });
+  }
+  function renderBrandTabs(){
+    const host=document.getElementById("brandTabs");host.innerHTML="";
+    config.brands.forEach((b,i)=>{const t=document.createElement("div");t.className="tab"+(i===adminTab?" on":"");t.textContent=b.name;t.onclick=()=>{adminTab=i;buildAdmin();};host.appendChild(t);});
+  }
+  function renderThumbs(){
+    const brand=config.brands[adminTab],host=document.getElementById("thumbs");host.innerHTML="";
+    (galleries[brand.id]||[]).forEach((it,i)=>{
+      const d=document.createElement("div");d.className="admin-thumb";
+      d.innerHTML = '<div class="thumb"><span style="color:#fff;font-size:10px;padding:5px;display:block;word-break:break-all;">' + escapeHtml(it.url || it.name) + '</span></div>';
+      const del=document.createElement("button");del.className="del";del.textContent="✕";del.onclick=()=>{galleries[brand.id].splice(i,1);renderThumbs();};d.appendChild(del);
+      host.appendChild(d);
+    });
+  }
+  function handleAddLink(){
+    const brand=config.brands[adminTab],inp=document.getElementById("linkInput"),url=(inp.value||"").trim();
+    if(!url)return;
+    galleries[brand.id].push({kind:"link",url,id:uid()});
+    inp.value="";renderThumbs();
+  }
+  
+  async function doSave(){
+    config.meta.title=document.getElementById("cfg-title").value;
+    config.meta.sub=document.getElementById("cfg-sub").value;
+    const monthKey = (config.meta.sub || "state").trim();
+    
+    const gallery={};
+    config.brands.forEach(b => { gallery[b.id]=galleries[b.id]||[]; });
+    const payload = {meta:config.meta,brands:config.brands,donut:config.donut,people:config.people,gallery};
+
+    const btn=document.getElementById("saveBtn");btn.textContent="Saving…";btn.disabled=true;
+    try{
+      const res=await fetch(API + "?month=" + encodeURIComponent(monthKey), {
+          method:"POST",headers:{"Content-Type":"application/json","x-edit-pin":sessionPin},body:JSON.stringify(payload)
+      });
+      if(res.status===401) throw new Error("PIN");
+      if(!res.ok) throw new Error("HTTP "+res.status);
+      
+      toast("Saved " + monthKey + " ✓");
+      if (!availableMonths.includes(monthKey)) {
+          availableMonths.push(monthKey);
+          refreshDropdown();
+      }
+    }catch(err){
+      if(err.message==="PIN")toast("Wrong PIN. Refresh page.",true);
+      else toast("Save failed",true);
+    }finally{btn.textContent="Save & Publish Changes";btn.disabled=false;}
+  }
+})();
+</script>
