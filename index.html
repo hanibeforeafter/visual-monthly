@@ -25,10 +25,8 @@
   .report-title{
     text-align:center; font-family:'Quicksand',sans-serif; font-weight:700;
     font-size:clamp(30px,5.4vw,62px); letter-spacing:.5px; margin:6px auto 4px;
-    /* Removed the underline properties from here */
     text-shadow:0 2px 30px rgba(40,110,255,.35);
   }
-  /* Increased the font-size of report-sub to 22px */
   .report-sub{text-align:center;color:var(--text-dim);font-weight:700;letter-spacing:3px;text-transform:uppercase;font-size:22px;margin-bottom:10px;}
   
   #syncBar{display:flex;justify-content:center;align-items:center;gap:10px;margin-bottom:18px;flex-wrap:wrap;}
@@ -94,6 +92,31 @@
   #lightboxStage video{max-width:94vw;max-height:92vh;border-radius:12px;background:#000;}
   #lightboxStage iframe{width:min(94vw,1100px);height:min(86vh,760px);border:none;border-radius:12px;background:#fff;}
   #lightboxClose{position:fixed;top:18px;right:22px;width:44px;height:44px;border-radius:50%;border:none;background:rgba(255,255,255,.14);color:#fff;font-size:20px;cursor:pointer;z-index:81;}
+  
+  /* New Admin Button Styling */
+  #adminLink {
+    position: fixed; 
+    right: 22px; 
+    bottom: 22px;
+    background: rgba(255, 255, 255, 0.08); 
+    border: 1px solid var(--stroke-soft);
+    color: var(--text-dim); 
+    text-decoration: none;
+    padding: 8px 16px; 
+    border-radius: 999px;
+    font-family: 'Nunito', sans-serif; 
+    font-weight: 800; 
+    font-size: 13px;
+    backdrop-filter: blur(8px); 
+    transition: 0.2s; 
+    z-index: 50;
+  }
+  #adminLink:hover {
+    background: var(--glow); 
+    color: #fff; 
+    border-color: transparent; 
+    transform: scale(1.05);
+  }
 </style>
 
 <h1 class="report-title" id="titleEl">Loading...</h1>
@@ -135,6 +158,9 @@
   <button id="lightboxClose" aria-label="Close">✕</button>
   <div id="lightboxStage"></div>
 </div>
+
+<!-- New Admin Link Button -->
+<a href="/admin.html" id="adminLink">⚙︎ Admin</a>
 
 <script>
 (function(){
